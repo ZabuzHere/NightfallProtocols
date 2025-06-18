@@ -69,7 +69,7 @@ class ProtocolUtils
 	public static function injectClientData(int $p, array &$data) : void
 	{
 		// todo; make this prettier :yum:
-		if($p <= CustomProtocolInfo::PROTOCOL_1_21_70) {
+		if($p <= CustomProtocolInfo::PROTOCOL_1_21_90) {
 			$data["GraphicsMode"] = 0;
 			if($p <= CustomProtocolInfo::PROTOCOL_1_21_30) {
 				$data["MaxViewDistance"] = 0;

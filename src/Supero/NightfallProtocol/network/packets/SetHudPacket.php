@@ -30,21 +30,21 @@ class SetHudPacket extends PM_Packet{
 	protected function decodePayload(PacketSerializer $in) : void{
 		$this->hudElements = [];
 		for($i = 0, $count = $in->getUnsignedVarInt(); $i < $count; ++$i){
-			$this->hudElements[] = HudElement::fromPacket($in->getProtocol() >= CustomProtocolInfo::PROTOCOL_1_21_70 ? $in->getVarInt() : $in->getByte());
+			$this->hudElements[] = HudElement::fromPacket($in->getProtocol() >= CustomProtocolInfo::PROTOCOL_1_21_80 ? $in->getVarInt() : $in->getByte());
 		}
-		$this->visibility = HudVisibility::fromPacket($in->getProtocol() >= CustomProtocolInfo::PROTOCOL_1_21_70 ? $in->getVarInt() : $in->getByte());
+		$this->visibility = HudVisibility::fromPacket($in->getProtocol() >= CustomProtocolInfo::PROTOCOL_1_21_80 ? $in->getVarInt() : $in->getByte());
 	}
 
 	protected function encodePayload(PacketSerializer $out) : void{
 		$out->putUnsignedVarInt(count($this->hudElements));
 		foreach($this->hudElements as $element){
-			if($out->getProtocol() >= CustomProtocolInfo::PROTOCOL_1_21_70){
+			if($out->getProtocol() >= CustomProtocolInfo::PROTOCOL_1_21_80){
 				$out->putVarInt($element->value);
 			}else{
 				$out->putByte($element->value);
 			}
 		}
-		if($out->getProtocol() >= CustomProtocolInfo::PROTOCOL_1_21_70){
+		if($out->getProtocol() >= CustomProtocolInfo::PROTOCOL_1_21_80){
 			$out->putVarInt($this->visibility->value);
 		}else{
 			$out->putByte($this->visibility->value);

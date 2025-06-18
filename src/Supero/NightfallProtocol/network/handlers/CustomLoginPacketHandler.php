@@ -44,7 +44,7 @@ class CustomLoginPacketHandler extends PacketHandler{
 	){}
 
 	public function handleLogin(LoginPacket $packet) : bool{
-		$extraData = $this->fetchAuthData($packet->chainDataJwt);
+		$extraData = $this->fetchAuthDataFromJson($packet->authInfoJson);
 
 		if(!Player::isValidUserName($extraData->displayName)){
 			$this->session->disconnectWithError(KnownTranslationFactory::disconnectionScreen_invalidName());
@@ -131,6 +131,24 @@ class CustomLoginPacketHandler extends PacketHandler{
 	/**
 	 * @throws PacketHandlingException
 	 */
+
+	protected function fetchAuthDataFromJson(string $authInfoJson): AuthenticationData{
+		try {
+			$decoded = json_decode($authInfoJson, true, 512, JSON_THROW_ON_ERROR);
+		} catch (\JsonException $e) {
+			throw new PacketHandlingException("Failed to decode authInfoJson: " . $e->getMessage());
+		}
+		
+		if (!isset($decoded["chain"]) || !is_array($decoded["chain"])) {
+		throw new PacketHandlingException("authInfoJson missing 'chain' array");
+		}
+
+		$jwtChain = new JwtChain();
+		$jwtChain->chain = $decoded["chain"];
+
+		return $this->fetchAuthData($jwtChain);
+	}
+	
 	protected function fetchAuthData(JwtChain $chain) : AuthenticationData{
 		/** @var AuthenticationData|null $extraData */
 		$extraData = null;
@@ -152,7 +170,7 @@ class CustomLoginPacketHandler extends PacketHandler{
 				$mapper = new JsonMapper();
 				$mapper->bEnforceMapType = false;
 				$mapper->bExceptionOnMissingData = true;
-				$mapper->bExceptionOnUndefinedProperty = true;
+				$mapper->bExceptionOnUndefinedProperty = false;
 				$mapper->bStrictObjectTypeChecking = true;
 				try{
 					/** @var AuthenticationData $extraData */
@@ -200,7 +218,11 @@ class CustomLoginPacketHandler extends PacketHandler{
 	 * @throws InvalidArgumentException
 	 */
 	protected function processLogin(LoginPacket $packet, bool $authRequired) : void{
-		$this->server->getAsyncPool()->submitTask(new ProcessLoginTask($packet->chainDataJwt->chain, $packet->clientDataJwt, $authRequired, $this->authCallback));
+		// $this->server->getAsyncPool()->submitTask(new ProcessLoginTask($packet->chainDataJwt->chain, $packet->clientDataJwt, $authRequired, $this->authCallback));
+		$chainArray = json_decode($packet->authInfoJson, true)["chain"] ?? [];
+
+		$this->server->getAsyncPool()->submitTask(
+			new ProcessLoginTask($chainArray, $packet->clientDataJwt, $authRequired, $this->authCallback));
 		$this->session->setHandler(null); //drop packets received during login verification
 	}
 }
